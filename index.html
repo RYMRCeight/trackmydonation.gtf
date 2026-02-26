@@ -104,8 +104,8 @@ th {
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbwHRPZ-pqe-iaKPjysJi4YHzXl0xiqgyHukFefrPOw5a2RUSsIolFOS7pxZUvD_eQ7EYA/exec";
 
-// ADD RECORD (POST is allowed without reading response)
-async function addRecord() {
+// ADD RECORD (JSONP method)
+function addRecord() {
   const name = document.getElementById("name").value.trim();
   const amount = document.getElementById("amount").value;
 
@@ -114,19 +114,36 @@ async function addRecord() {
     return;
   }
 
-  await fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify({ name, amount })
-  });
+  const script = document.createElement("script");
+  script.src = API_URL + 
+    "?action=add" +
+    "&name=" + encodeURIComponent(name) +
+    "&amount=" + encodeURIComponent(amount) +
+    "&callback=afterSave";
 
+  document.body.appendChild(script);
+}
+
+// Callback after saving
+function afterSave(response) {
   alert("Saved successfully!");
   document.getElementById("name").value = "";
   document.getElementById("amount").value = "";
-
-  setTimeout(loadData, 1000);
+  loadData();
 }
 
-// JSONP CALLBACK (this will receive the data)
+// Load data via JSONP
+function loadData() {
+  const oldScript = document.getElementById("jsonpScript");
+  if (oldScript) oldScript.remove();
+
+  const script = document.createElement("script");
+  script.id = "jsonpScript";
+  script.src = API_URL + "?action=get&callback=renderData";
+  document.body.appendChild(script);
+}
+
+// Render dashboard
 function renderData(data) {
   let table = "";
   let total = 0;
@@ -145,17 +162,6 @@ function renderData(data) {
   document.getElementById("tableBody").innerHTML = table;
   document.getElementById("totalAmount").innerText =
     "Total Collected: ₱ " + total.toLocaleString();
-}
-
-// LOAD DATA USING SCRIPT TAG (NO CORS)
-function loadData() {
-  const oldScript = document.getElementById("jsonpScript");
-  if (oldScript) oldScript.remove();
-
-  const script = document.createElement("script");
-  script.id = "jsonpScript";
-  script.src = API_URL + "?action=get&callback=renderData";
-  document.body.appendChild(script);
 }
 
 loadData();
