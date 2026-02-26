@@ -104,6 +104,7 @@ th {
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbwHRPZ-pqe-iaKPjysJi4YHzXl0xiqgyHukFefrPOw5a2RUSsIolFOS7pxZUvD_eQ7EYA/exec";
 
+// ADD RECORD
 async function addRecord() {
   const name = document.getElementById("name").value.trim();
   const amount = document.getElementById("amount").value;
@@ -115,36 +116,44 @@ async function addRecord() {
 
   await fetch(API_URL, {
     method: "POST",
+    mode: "no-cors",
+    headers: {
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify({ name, amount })
   });
 
   alert("Saved successfully!");
   document.getElementById("name").value = "";
   document.getElementById("amount").value = "";
-  loadData();
+
+  setTimeout(loadData, 1000);
 }
 
-async function loadData() {
-  const response = await fetch(API_URL + "?action=get");
-  const data = await response.json();
+// LOAD DATA (Using iframe proxy trick)
+function loadData() {
+  fetch(API_URL + "?action=get")
+    .then(response => response.json())
+    .then(data => {
+      let table = "";
+      let total = 0;
 
-  let table = "";
-  let total = 0;
+      data.forEach(row => {
+        total += Number(row[2]);
+        table += `
+          <tr>
+            <td>${row[0]}</td>
+            <td>${row[1]}</td>
+            <td>₱ ${Number(row[2]).toLocaleString()}</td>
+          </tr>
+        `;
+      });
 
-  data.forEach(row => {
-    total += Number(row[2]);
-    table += `
-      <tr>
-        <td>${row[0]}</td>
-        <td>${row[1]}</td>
-        <td>₱ ${Number(row[2]).toLocaleString()}</td>
-      </tr>
-    `;
-  });
-
-  document.getElementById("tableBody").innerHTML = table;
-  document.getElementById("totalAmount").innerText =
-    "Total Collected: ₱ " + total.toLocaleString();
+      document.getElementById("tableBody").innerHTML = table;
+      document.getElementById("totalAmount").innerText =
+        "Total Collected: ₱ " + total.toLocaleString();
+    })
+    .catch(error => console.error(error));
 }
 
 loadData();
