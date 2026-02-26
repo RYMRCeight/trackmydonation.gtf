@@ -104,7 +104,8 @@ th {
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbwHRPZ-pqe-iaKPjysJi4YHzXl0xiqgyHukFefrPOw5a2RUSsIolFOS7pxZUvD_eQ7EYA/exec";
 
-// ADD RECORD (JSONP method)
+let loading = false;
+
 function addRecord() {
   const name = document.getElementById("name").value.trim();
   const amount = document.getElementById("amount").value;
@@ -115,7 +116,8 @@ function addRecord() {
   }
 
   const script = document.createElement("script");
-  script.src = API_URL + 
+  script.src =
+    API_URL +
     "?action=add" +
     "&name=" + encodeURIComponent(name) +
     "&amount=" + encodeURIComponent(amount) +
@@ -124,26 +126,30 @@ function addRecord() {
   document.body.appendChild(script);
 }
 
-// Callback after saving
-function afterSave(response) {
+function afterSave() {
   alert("Saved successfully!");
   document.getElementById("name").value = "";
   document.getElementById("amount").value = "";
   loadData();
 }
 
-// Load data via JSONP
 function loadData() {
-  const oldScript = document.getElementById("jsonpScript");
-  if (oldScript) oldScript.remove();
+  if (loading) return;
+  loading = true;
+
+  const old = document.getElementById("jsonpLoader");
+  if (old) old.remove();
 
   const script = document.createElement("script");
-  script.id = "jsonpScript";
+  script.id = "jsonpLoader";
   script.src = API_URL + "?action=get&callback=renderData";
+
+  script.onload = () => loading = false;
+  script.onerror = () => loading = false;
+
   document.body.appendChild(script);
 }
 
-// Render dashboard
 function renderData(data) {
   let table = "";
   let total = 0;
